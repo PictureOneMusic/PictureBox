@@ -165,7 +165,7 @@ playingnotes = {}
 sustainplayingnotes = []
 sustain = False
 playingsounds = []
-globalvolume = 10 ** (-12.0/20)  # -12dB default global volume
+globalvolume = 10 ** (-12/20)  # -12dB default global volume
 globaltranspose = 0
 
 
@@ -191,7 +191,8 @@ def MidiCallback(message, time_stamp):
     global playingnotes, sustain, sustainplayingnotes
     global preset
     messagetype = message[0] >> 4
-    messagechannel = (message[0] & 15) + 1
+    messagechannel = (message[0] & 15);
+    print messagechannel;
     note = message[1] if len(message) > 1 else None
     midinote = note
     velocity = message[2] if len(message) > 2 else None
@@ -200,9 +201,11 @@ def MidiCallback(message, time_stamp):
         messagetype = 8
 
     if messagetype == 9:    # Note on
+        print "playing note";
+        print samples[messagechannel];
         midinote += globaltranspose
         try:
-            playingnotes.setdefault(midinote, []).append(samples[midinote, velocity].play(midinote))
+            playingnotes.setdefault(midinote, []).append(samples[messagechannel][midinote, velocity].play(midinote))
         except:
             pass
 
@@ -256,6 +259,8 @@ def LoadSamples():
 
 NOTES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"]
 
+def IsDirectory(directory):
+    return os.path.isdir(directory) & (directory[0].isdigit() | directory[0:1].isdigit());
 
 def ActuallyLoad():
     global preset
@@ -263,87 +268,97 @@ def ActuallyLoad():
     global playingsounds
     global globalvolume, globaltranspose
     playingsounds = []
-    samples = {}
+    samples = range(16);
     globalvolume = 10 ** (-12.0/20)  # -12dB default global volume
     globaltranspose = 0
 
     samplesdir = SAMPLES_DIR if os.listdir(SAMPLES_DIR) else '.'      # use current folder (containing 0 Saw) if no user media containing samples has been found
+    print 'Samplesdir: ' + samplesdir;
+    print 'Preset: ' + str(preset);
 
-    basename = next((f for f in os.listdir(samplesdir) if f.startswith("%d " % preset)), None)      # or next(glob.iglob("blah*"), None)
-    if basename:
-        dirname = os.path.join(samplesdir, basename)
-    if not basename:
-        print 'Preset empty: %s' % preset
-        display("E%03d" % preset)
-        return
-    print 'Preset loading: %s (%s)' % (preset, basename)
-    display("L%03d" % preset)
+    directories = filter(IsDirectory, os.listdir(samplesdir));
+    directories.sort();
 
-    definitionfname = os.path.join(dirname, "definition.txt")
-    if os.path.isfile(definitionfname):
-        with open(definitionfname, 'r') as definitionfile:
-            for i, pattern in enumerate(definitionfile):
-                try:
-                    if r'%%volume' in pattern:        # %%paramaters are global parameters
-                        globalvolume *= 10 ** (float(pattern.split('=')[1].strip()) / 20)
-                        continue
-                    if r'%%transpose' in pattern:
-                        globaltranspose = int(pattern.split('=')[1].strip())
-                        continue
-                    defaultparams = {'midinote': '0', 'velocity': '127', 'notename': ''}
-                    if len(pattern.split(',')) > 1:
-                        defaultparams.update(dict([item.split('=') for item in pattern.split(',', 1)[1].replace(' ', '').replace('%', '').split(',')]))
-                    pattern = pattern.split(',')[0]
-                    pattern = re.escape(pattern.strip())
-                    pattern = pattern.replace(r"\%midinote", r"(?P<midinote>\d+)").replace(r"\%velocity", r"(?P<velocity>\d+)")\
-                                     .replace(r"\%notename", r"(?P<notename>[A-Ga-g]#?[0-9])").replace(r"\*", r".*?").strip()    # .*? => non greedy
-                    for fname in os.listdir(dirname):
-                        if LoadingInterrupt:
-                            return
-                        m = re.match(pattern, fname)
-                        if m:
-                            info = m.groupdict()
-                            midinote = int(info.get('midinote', defaultparams['midinote']))
-                            velocity = int(info.get('velocity', defaultparams['velocity']))
-                            notename = info.get('notename', defaultparams['notename'])
-                            if notename:
-                                midinote = NOTES.index(notename[:-1].lower()) + (int(notename[-1])+2) * 12
-                            samples[midinote, velocity] = Sound(os.path.join(dirname, fname), midinote, velocity)
-                except:
-                    print "Error in definition file, skipping line %s." % (i+1)
+    index = 0;
+    for directory in enumerate(directories):
+        samples[index] = {};
+        print index;
+        basename = str(directory);
 
-    else:
-        for midinote in range(0, 127):
-            if LoadingInterrupt:
-                return
-            file = os.path.join(dirname, "%d.wav" % midinote)
-            if os.path.isfile(file):
-                samples[midinote, 127] = Sound(file, midinote, 127)
+        if basename:
+            dirname = os.path.join(samplesdir, basename)
+        if not basename:
+            print 'Preset empty: %s' % preset
+            display("E%03d" % preset)
+            return
+        print 'Preset loading: %s (%s)' % (preset, basename)
+        display("L%03d" % preset)
 
-    initial_keys = set(samples.keys())
-    for midinote in xrange(128):
-        lastvelocity = None
-        for velocity in xrange(128):
-            if (midinote, velocity) not in initial_keys:
-                samples[midinote, velocity] = lastvelocity
-            else:
-                if not lastvelocity:
-                    for v in xrange(velocity):
-                        samples[midinote, v] = samples[midinote, velocity]
-                lastvelocity = samples[midinote, velocity]
-        if not lastvelocity:
+        definitionfname = os.path.join(dirname, "definition.txt")
+        if os.path.isfile(definitionfname):
+            with open(definitionfname, 'r') as definitionfile:
+                for i, pattern in enumerate(definitionfile):
+                    try:
+                        if r'%%volume' in pattern:        # %%paramaters are global parameters
+                            globalvolume *= 10 ** (float(pattern.split('=')[1].strip()) / 20)
+                            continue
+                        if r'%%transpose' in pattern:
+                            globaltranspose = int(pattern.split('=')[1].strip())
+                            continue
+                        defaultparams = {'midinote': '0', 'velocity': '127', 'notename': ''}
+                        if len(pattern.split(',')) > 1:
+                            defaultparams.update(dict([item.split('=') for item in pattern.split(',', 1)[1].replace(' ', '').replace('%', '').split(',')]))
+                        pattern = pattern.split(',')[0]
+                        pattern = re.escape(pattern.strip())
+                        pattern = pattern.replace(r"\%midinote", r"(?P<midinote>\d+)").replace(r"\%velocity", r"(?P<velocity>\d+)")\
+                                         .replace(r"\%notename", r"(?P<notename>[A-Ga-g]#?[0-9])").replace(r"\*", r".*?").strip()    # .*? => non greedy
+                        for fname in os.listdir(dirname):
+                            if LoadingInterrupt:
+                                return
+                            m = re.match(pattern, fname)
+                            if m:
+                                info = m.groupdict()
+                                midinote = int(info.get('midinote', defaultparams['midinote']))
+                                velocity = int(info.get('velocity', defaultparams['velocity']))
+                                notename = info.get('notename', defaultparams['notename'])
+                                if notename:
+                                    midinote = NOTES.index(notename[:-1].lower()) + (int(notename[-1])+2) * 12
+                                samples[index][midinote, velocity] = Sound(os.path.join(dirname, fname), midinote, velocity)
+                    except:
+                        print "Error in definition file, skipping line %s." % (i+1)
+
+        else:
+            for midinote in range(0, 127):
+                if LoadingInterrupt:
+                    return
+                file = os.path.join(dirname, "%d.wav" % midinote)
+                if os.path.isfile(file):
+                    samples[index][midinote, 127] = Sound(file, midinote, 127)
+
+        initial_keys = set(samples[index].keys())
+        for midinote in xrange(128):
+            lastvelocity = None
             for velocity in xrange(128):
-                try:
-                    samples[midinote, velocity] = samples[midinote-1, velocity]
-                except:
-                    pass
-    if len(initial_keys) > 0:
-        print 'Preset loaded: ' + str(preset)
-        display("%04d" % preset)
-    else:
-        print 'Preset empty: ' + str(preset)
-        display("E%03d" % preset)
-
+                if (midinote, velocity) not in initial_keys:
+                    samples[index][midinote, velocity] = lastvelocity
+                else:
+                    if not lastvelocity:
+                        for v in xrange(velocity):
+                            samples[index][midinote, v] = samples[index][midinote, velocity]
+                    lastvelocity = samples[index][midinote, velocity]
+            if not lastvelocity:
+                for velocity in xrange(128):
+                    try:
+                        samples[index][midinote, velocity] = samples[index][midinote-1, velocity]
+                    except:
+                        pass
+        if len(initial_keys) > 0:
+            print 'Preset loaded: ' + str(preset)
+            display("%04d" % preset)
+        else:
+            print 'Preset empty: ' + str(preset)
+            display("E%03d" % preset)
+    print samples;
 
 #########################################
 # OPEN AUDIO DEVICE
