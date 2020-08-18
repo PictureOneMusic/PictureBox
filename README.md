@@ -23,7 +23,7 @@ PictureBox works with the RaspberryPi's built-in soundcard, but it is recommende
 2. Download PictureBox and build it with: 
 
   ~~~
-  git clone https://github.com/josephernest/PictureBox.git
+  git clone https://github.com/PictureOneMusic/PictureBox.git
   cd PictureBox ; sudo python setup.py build_ext --inplace
   ~~~
 
