@@ -6,7 +6,7 @@ A work in progress fork of the amazing project by Jospeh Ernest
 (samplerbox.org). Currently I am making some mods for personal use to the project
 and I thought I'd share my work as I go.
 
-[![](http://gget.it/flurexml/1.jpg)](https://www.youtube.com/watch?v=yz7GZ8YOjTw)
+This modification allow for multiple samples to be play at the same time via explicit midi channels.
 
 [Install](#install)
 ----
@@ -27,27 +27,18 @@ PictureBox works with the RaspberryPi's built-in soundcard, but it is recommende
   cd PictureBox ; sudo python setup.py build_ext --inplace
   ~~~
 
-3. Run the soft with `python samplerbox.py`.
+3. Run the soft with `python picturebox.py`.
 
 4. Play some notes on the connected MIDI keyboard, you'll hear some sound!  
 
-*(Optional)*  Modify `samplerbox.py`'s first lines if you want to change root directory for sample-sets, default soundcard, etc.
+5. Send multiple channels of midi and hear different sounds!
 
-
-[How to use it](#howto)
-----
-
-See the [FAQ](http://www.samplerbox.org/faq) on www.samplerbox.org.
-
-
-[ISO image](#isoimage)
-----
-
-The ready-to-use ISO images available on [www.samplerbox.org](http://www.samplerbox.org) are built with the help of a script that can be found in `isoimage/samplerbox_iso_maker.sh`.
+*(Optional)*  Modify `picturebox.py`'s first lines if you want to change root directory for sample-sets, default soundcard, etc.
 
 
 [About](#about)
 ----
+Forked from:
 
 Author : Joseph Ernest (twitter: [@JosephErnest](http:/twitter.com/JosephErnest), mail: [contact@samplerbox.org](mailto:contact@samplerbox.org))
 
