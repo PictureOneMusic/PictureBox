@@ -6,7 +6,7 @@ A work in progress fork of the amazing project by Jospeh Ernest
 (samplerbox.org). Currently I am making some mods for personal use to the project
 and I thought I'd share my work as I go.
 
-This modification allow for multiple samples to be play at the same time via explicit midi channels.
+This modification allowa for multiple samples to be playws at the same time via explicit midi channels.
 
 [Install](#install)
 ----
