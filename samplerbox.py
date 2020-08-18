@@ -160,7 +160,7 @@ FADEOUT = numpy.power(FADEOUT, 6)
 FADEOUT = numpy.append(FADEOUT, numpy.zeros(FADEOUTLENGTH, numpy.float32)).astype(numpy.float32)
 SPEED = numpy.power(2, numpy.arange(0.0, 84.0)/12).astype(numpy.float32)
 
-samples = {}
+samples = []
 playingnotes = {}
 sustainplayingnotes = []
 sustain = False
@@ -192,7 +192,6 @@ def MidiCallback(message, time_stamp):
     global preset
     messagetype = message[0] >> 4
     messagechannel = (message[0] & 15);
-    print messagechannel;
     note = message[1] if len(message) > 1 else None
     midinote = note
     velocity = message[2] if len(message) > 2 else None
@@ -201,8 +200,6 @@ def MidiCallback(message, time_stamp):
         messagetype = 8
 
     if messagetype == 9:    # Note on
-        print "playing note";
-        print samples[messagechannel];
         midinote += globaltranspose
         try:
             playingnotes.setdefault(midinote, []).append(samples[messagechannel][midinote, velocity].play(midinote))
@@ -273,8 +270,6 @@ def ActuallyLoad():
     globaltranspose = 0
 
     samplesdir = SAMPLES_DIR if os.listdir(SAMPLES_DIR) else '.'      # use current folder (containing 0 Saw) if no user media containing samples has been found
-    print 'Samplesdir: ' + samplesdir;
-    print 'Preset: ' + str(preset);
 
     directories = filter(IsDirectory, os.listdir(samplesdir));
     directories.sort();
@@ -282,19 +277,18 @@ def ActuallyLoad():
     index = 0;
     for directory in enumerate(directories):
         samples[index] = {};
-        print index;
-        basename = str(directory);
+        basename = str(directory[1]);
 
         if basename:
             dirname = os.path.join(samplesdir, basename)
         if not basename:
-            print 'Preset empty: %s' % preset
-            display("E%03d" % preset)
+            print 'Preset empty: %s' % index
+            display("E%03d" % index)
             return
-        print 'Preset loading: %s (%s)' % (preset, basename)
-        display("L%03d" % preset)
+        print 'Preset loading: %s (%s)' % (index, basename)
+        display("L%03d" % index)
 
-        definitionfname = os.path.join(dirname, "definition.txt")
+        definitionfname = os.path.join(basename, "definition.txt")
         if os.path.isfile(definitionfname):
             with open(definitionfname, 'r') as definitionfile:
                 for i, pattern in enumerate(definitionfile):
@@ -353,12 +347,12 @@ def ActuallyLoad():
                     except:
                         pass
         if len(initial_keys) > 0:
-            print 'Preset loaded: ' + str(preset)
-            display("%04d" % preset)
+            print 'Preset loaded: ' + str(index)
+            display("%04d" % index)
         else:
-            print 'Preset empty: ' + str(preset)
-            display("E%03d" % preset)
-    print samples;
+            print 'Preset empty: ' + str(index)
+            display("E%03d" % index)
+        index = index + 1;
 
 #########################################
 # OPEN AUDIO DEVICE
